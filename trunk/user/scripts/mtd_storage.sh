@@ -308,6 +308,12 @@ EOF
 ### Called after internal iptables reconfig (firewall update)
 
 #wing resume
+ip6tables -A FORWARD -p tcp --dport 11899 -j ACCEPT
+ip6tables -A FORWARD -p udp --dport 11899 -j ACCEPT
+ip6tables -A FORWARD -p tcp --dport 5443 -j ACCEPT
+ip6tables -A FORWARD -p tcp --dport 8443 -j ACCEPT
+ip6tables -A FORWARD -p tcp --dport 3300 -j ACCEPT
+ip6tables -A FORWARD -p tcp --dport 6690 -j ACCEPT
 
 EOF
 		chmod 755 "$script_postf"
@@ -564,6 +570,7 @@ EOF
 # Custom user hosts file
 # Example:
 # 192.168.1.100		Boo
+192.168.5.3 nas.ljzkirito.ml
 
 EOF
 		chmod 644 "$user_hosts"
