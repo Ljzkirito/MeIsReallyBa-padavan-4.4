@@ -6,7 +6,7 @@ on:
       name:
         description: 'Git remote add Yh793/rt-n56u.git'
         required: true
-        default: 'Yh793'
+        default: 'Yh793/rt-n56u'
       branch:
         description: 'Git log branch'
         required: true
@@ -30,7 +30,7 @@ jobs:
         git config --global user.name "Ljzkirito"
     - name: Cherry-pick commit
       run: |
-        git remote add target git://github.com/${{ github.event.inputs.name }}/rt-n56u.git
+        git remote add target https://github.com/${{ github.event.inputs.name }}.git
         git fetch target
         git log target/${{ github.event.inputs.branch }}
         git branch
