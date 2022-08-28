@@ -1,0 +1,38 @@
+name: Git cherry-pick commit
+
+on:
+  workflow_dispatch:
+    inputs:
+      name:
+        description: 'Git remote add Yh793/rt-n56u.git'
+        required: true
+        default: 'Yh793'
+      branch:
+        description: 'Git log branch'
+        required: true
+        default: 'master'
+      commitid:
+        description: 'Git cherry-pick commitid'
+        required: true
+
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Checkout
+      uses: actions/checkout@main
+
+    - name: Set git identity
+      run : |
+        git config --global user.email "kirito.ljz@gmail.com"
+        git config --global user.name "Ljzkirito"
+    - name: Cherry-pick commit
+      run: |
+        git remote add target git://github.com/${{ github.event.inputs.name }}/rt-n56u.git
+        git fetch target
+        git log target/${{ github.event.inputs.branch }}
+        git branch
+        git cherry-pick ${{ github.event.inputs.commitid }}
+        git push
