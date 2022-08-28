@@ -1,0 +1,85 @@
+name: Build Padavan
+
+on:
+  workflow_dispatch:
+    inputs:
+      Build_Targets:
+        description: 'Build_Targets'
+        required: true
+        default: 'RM2100'
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@main
+
+    - name: Prepare environment
+      run: |
+       sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc
+       sudo -E apt-get -qq update
+       sudo -E apt-get -qq install libtool-bin gperf python3-docutils autopoint gettext zip
+       sudo -E apt-get -qq autoremove --purge
+       sudo -E apt-get -qq clean
+       sudo timedatectl set-timezone "Asia/Shanghai"
+    - name: Download toolchain
+      if: (!cancelled())
+      run: |
+       cd toolchain-mipsel
+       sh dl_toolchain.sh
+    - name: Compile the firmware
+      if: (!cancelled())
+      id: compile
+      run: |
+        cd trunk
+        fakeroot ./build_firmware_modify ${{ github.event.inputs.Build_Targets }}
+        echo "::set-output name=status::success"
+        echo "FILE_DATE=$(date +"%Y%m%d%H%M")" >> $GITHUB_ENV
+    - name: Upload firmware directory
+      uses: actions/upload-artifact@main
+      if: steps.compile.outputs.status == 'success' && !cancelled()
+      with:
+        name: Padavan_firmware_${{ github.event.inputs.Build_Targets }}_${{ env.FILE_DATE }}
+        path: trunk/images
+
+    - name: Generate release tag
+      id: tag
+      if: steps.compile.outputs.status == 'success' && !cancelled()
+      run: |
+       echo "::set-output name=release_tag::$(date +"%Y.%m.%d-%H%M")"
+       touch release.txt
+       echo "## Padavan Release Test $(date +"%Y.%m.%d-%H:%M")" >> release.txt
+       echo "- ${{ github.event.inputs.Build_Targets }}.trx" >> release.txt
+       echo "  md5sum: $(md5sum trunk/images/*.trx | cut -d" " -f1)" >> release.txt
+       echo "  sha256: $(sha256sum trunk/images/*.trx | cut -d" " -f1)" >> release.txt
+       echo "::set-output name=status::success"
+    - name: Upload firmware to release
+      uses: softprops/action-gh-release@v1
+      if: steps.tag.outputs.status == 'success' && !cancelled()
+      env:
+       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+       tag_name: ${{ steps.tag.outputs.release_tag }}
+       body_path: release.txt
+       prerelease: false
+       files: |
+        trunk/images/*.trx
+        trunk/configs/templates/${{ github.event.inputs.Build_Targets }}.config
+    - name: Delete workflow runs
+      uses: GitRML/delete-workflow-runs@main
+      with:
+       token: ${{ secrets.GITHUB_TOKEN }}
+       repository: ${{ github.repository }}
+       retain_days: 1
+       keep_minimum_runs: 5
+
+    - name: Remove old Releases
+      uses: dev-drprasad/delete-older-releases@v0.1.0
+      if: (!cancelled())
+      with:
+       keep_latest: 3
+       delete_tags: true
+      env:
+       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
