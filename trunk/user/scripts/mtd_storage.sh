@@ -308,11 +308,16 @@ EOF
 ### Called after internal iptables reconfig (firewall update)
 
 #wing resume
-ip6tables -F
-ip6tables -X
-ip6tables -P INPUT ACCEPT
-ip6tables -P OUTPUT ACCEPT
-ip6tables -P FORWARD ACCEPT
+ip6tables -I FORWARD -p tcp --dport 11899 -j ACCEPT
+ip6tables -I FORWARD -p tcp --sport 11899 -j ACCEPT
+ip6tables -I FORWARD -p udp --dport 11899 -j ACCEPT
+ip6tables -I FORWARD -p udp --sport 11899 -j ACCEPT
+ip6tables -I FORWARD -p tcp --dport 6690 -j ACCEPT
+ip6tables -I FORWARD -p tcp --sport 6690 -j ACCEPT
+ip6tables -I FORWARD -p tcp --dport 5443 -j ACCEPT
+ip6tables -I FORWARD -p tcp --sport 5443 -j ACCEPT
+ip6tables -I FORWARD -p tcp --dport 8443 -j ACCEPT
+ip6tables -I FORWARD -p tcp --sport 8443 -j ACCEPT
 
 EOF
 		chmod 755 "$script_postf"
