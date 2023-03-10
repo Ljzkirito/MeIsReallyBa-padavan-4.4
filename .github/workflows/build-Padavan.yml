@@ -10,11 +10,11 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
 
     steps:
     - name: Checkout
-      uses: actions/checkout@main
+      uses: actions/checkout@v3
 
     - name: Prepare environment
       run: |
@@ -35,10 +35,10 @@ jobs:
       run: |
         cd trunk
         fakeroot ./build_firmware_modify ${{ github.event.inputs.Build_Targets }}
-        echo "::set-output name=status::success"
+        echo "status=success" >> $GITHUB_OUTPUT
         echo "FILE_DATE=$(date +"%Y%m%d%H%M")" >> $GITHUB_ENV
     - name: Upload firmware directory
-      uses: actions/upload-artifact@main
+      uses: actions/upload-artifact@v3
       if: steps.compile.outputs.status == 'success' && !cancelled()
       with:
         name: Padavan_firmware_${{ github.event.inputs.Build_Targets }}_${{ env.FILE_DATE }}
@@ -48,13 +48,13 @@ jobs:
       id: tag
       if: steps.compile.outputs.status == 'success' && !cancelled()
       run: |
-       echo "::set-output name=release_tag::$(date +"%Y.%m.%d-%H%M")"
+       echo "release_tag=$(date +"%Y.%m.%d-%H%M")" >> $GITHUB_OUTPUT
        touch release.txt
-       echo "## Padavan Release Test $(date +"%Y.%m.%d-%H:%M")" >> release.txt
+       echo "## Padavan Release $(date +"%Y.%m.%d-%H:%M")" >> release.txt
        echo "- ${{ github.event.inputs.Build_Targets }}.trx" >> release.txt
        echo "  md5sum: $(md5sum trunk/images/*.trx | cut -d" " -f1)" >> release.txt
        echo "  sha256: $(sha256sum trunk/images/*.trx | cut -d" " -f1)" >> release.txt
-       echo "::set-output name=status::success"
+       echo "status=success" >> $GITHUB_OUTPUT
     - name: Upload firmware to release
       uses: softprops/action-gh-release@v1
       if: steps.tag.outputs.status == 'success' && !cancelled()
@@ -68,7 +68,7 @@ jobs:
         trunk/images/*.trx
         trunk/configs/templates/${{ github.event.inputs.Build_Targets }}.config
     - name: Delete workflow runs
-      uses: GitRML/delete-workflow-runs@main
+      uses: Mattraks/delete-workflow-runs@v2
       with:
        token: ${{ secrets.GITHUB_TOKEN }}
        repository: ${{ github.repository }}
@@ -76,7 +76,7 @@ jobs:
        keep_minimum_runs: 5
 
     - name: Remove old Releases
-      uses: dev-drprasad/delete-older-releases@v0.1.0
+      uses: dev-drprasad/delete-older-releases@v0.2.1
       if: (!cancelled())
       with:
        keep_latest: 3
